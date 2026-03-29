@@ -15,7 +15,7 @@ class SankalpRequest(BaseModel):
 @router.post("/sankalp")
 def generate_contract(request: SankalpRequest):
 
-    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+   client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
     prompt = f"""
 Convert the following intent into a structured decision contract.
