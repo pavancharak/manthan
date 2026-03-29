@@ -7,7 +7,7 @@ router = APIRouter()
 conn = sqlite3.connect("manthan.db", check_same_thread=False)
 
 # =========================
-# DATABASE
+# DATABASE SETUP
 # =========================
 
 conn.execute("""
@@ -30,7 +30,7 @@ conn.commit()
 
 
 # =========================
-# INIT CONTRACT
+# INIT DEFAULT CONTRACT
 # =========================
 
 def init_contract():
@@ -56,7 +56,7 @@ init_contract()
 
 
 # =========================
-# LOAD CONTRACT
+# LOAD LATEST CONTRACT
 # =========================
 
 def get_contract():
@@ -72,7 +72,7 @@ def get_contract():
 
 
 # =========================
-# VALIDATION (SAMIKSHA)
+# SAMIKSHA (STRONG VALIDATION)
 # =========================
 
 def validate_contract(contract):
@@ -85,21 +85,46 @@ def validate_contract(contract):
     if not isinstance(contract["rules"], list) or len(contract["rules"]) == 0:
         return False, "Rules must be non-empty list"
 
+    seen_conditions = set()
+
     for i, rule in enumerate(contract["rules"]):
+
+        # Structure checks
         if "condition" not in rule:
             return False, f"Rule {i} missing condition"
 
         if "action" not in rule:
             return False, f"Rule {i} missing action"
 
-        if not isinstance(rule["condition"], str):
+        condition = rule["condition"]
+
+        if not isinstance(condition, str):
             return False, f"Rule {i} condition must be string"
+
+        # Duplicate rule detection
+        if condition in seen_conditions:
+            return False, f"Duplicate condition in rule {i}"
+
+        seen_conditions.add(condition)
+
+        # Security protection
+        forbidden = ["import", "__", "exec", "eval", "os", "sys"]
+        for word in forbidden:
+            if word in condition:
+                return False, f"Unsafe condition in rule {i}"
+
+        # Syntax validation
+        try:
+            test_data = {"amount": 1000}
+            eval(condition, {}, test_data)
+        except Exception:
+            return False, f"Invalid condition syntax in rule {i}"
 
     return True, "valid"
 
 
 # =========================
-# ENGINE (NIRMIT RUNTIME)
+# NIRMIT RUNTIME (ENGINE)
 # =========================
 
 def evaluate(contract, data):
@@ -110,7 +135,10 @@ def evaluate(contract, data):
                 "reason": rule["condition"]
             }
 
-    return {"decision": "no_match", "reason": "no rule matched"}
+    return {
+        "decision": "no_match",
+        "reason": "no rule matched"
+    }
 
 
 # =========================
@@ -180,7 +208,7 @@ def create_contract(data: dict):
     if not is_valid:
         return {
             "status": "rejected",
-            "reason": message
+            "error": message
         }
 
     conn.execute(
@@ -191,5 +219,6 @@ def create_contract(data: dict):
 
     return {
         "status": "contract_created",
-        "version": version
+        "version": version,
+        "message": "Contract validated and stored"
     }
