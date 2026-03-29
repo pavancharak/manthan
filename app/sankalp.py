@@ -11,22 +11,13 @@ load_dotenv()
 router = APIRouter()
 
 
-# =========================
-# INPUT MODEL
-# =========================
-
 class SankalpRequest(BaseModel):
     intent: str
 
 
-# =========================
-# SANKALP API
-# =========================
-
 @router.post("/sankalp")
 def generate_contract(request: SankalpRequest):
 
-    # ✅ FIX: initialize here (NOT global)
     client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
     prompt = f"""
@@ -77,9 +68,8 @@ Format:
 
         return parsed
 
-   except Exception as e:
-    return {
-        "status": "error",
-        "type": str(type(e)),
-        "message": str(e)
-    }
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": str(e)
+        }
