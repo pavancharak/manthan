@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Manthan</title>
+  <style>
+    body {
+      font-family: Arial;
+      background: #0f172a;
+      color: white;
+      padding: 40px;
+    }
+
+    .card {
+      background: #1e293b;
+      padding: 20px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+    }
+
+    input, textarea {
+      padding: 10px;
+      border-radius: 5px;
+      border: none;
+      margin: 5px 0;
+      width: 100%;
+    }
+
+    button {
+      padding: 10px;
+      background: #3b82f6;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    li {
+      background: #334155;
+      padding: 10px;
+      margin-bottom: 8px;
+      border-radius: 5px;
+    }
+
+    pre {
+      background: #020617;
+      padding: 10px;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+
+<body>
+
+<h1>🧠 Manthan — Decision System</h1>
+
+<!-- RUN DECISION -->
+<div class="card">
+  <h2>Run Decision</h2>
+  <input id="amount" placeholder="Enter amount" />
+  <button onclick="run()">Run</button>
+  <div id="result"></div>
+</div>
+
+<!-- CONTRACT -->
+<div class="card">
+  <h2>Current Contract</h2>
+  <pre id="contract"></pre>
+
+  <h3>Update Contract</h3>
+  <textarea id="contractInput" rows="8">
+{
+  "version": "v2",
+  "contract": {
+    "rules": [
+      {"condition": "amount <= 10000", "action": "auto_approve"},
+      {"condition": "amount > 10000", "action": "require_director"}
+    ]
+  }
+}
+  </textarea>
+
+  <button onclick="updateContract()">Update Contract</button>
+  <div id="contractResult"></div>
+</div>
+
+<!-- AUDIT -->
+<div class="card">
+  <h2>Audit Logs</h2>
+  <ul id="logs"></ul>
+</div>
+
+<script>
+async function run() {
+  const amount = document.getElementById("amount").value;
+
+  const res = await fetch("http://127.0.0.1:8000/execute/expense_approval", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({amount: Number(amount)})
+  });
+
+  const data = await res.json();
+
+  document.getElementById("result").innerHTML =
+    `<b>${data.decision}</b> (${data.reason})`;
+
+  loadLogs();
+}
+
+async function loadLogs() {
+  const res = await fetch("http://127.0.0.1:8000/audit");
+  const logs = await res.json();
+
+  const list = document.getElementById("logs");
+  list.innerHTML = "";
+
+  logs.reverse().forEach(log => {
+    const li = document.createElement("li");
+    li.innerText = `${log.input} → ${log.decision} (${log.reason})`;
+    list.appendChild(li);
+  });
+}
+
+async function loadContract() {
+  const res = await fetch("http://127.0.0.1:8000/contract");
+  const data = await res.json();
+
+  document.getElementById("contract").innerText =
+    JSON.stringify(data, null, 2);
+}
+
+async function updateContract() {
+  try {
+    const input = document.getElementById("contractInput").value;
+    const parsed = JSON.parse(input);
+
+    const res = await fetch("http://127.0.0.1:8000/contract", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(parsed)
+    });
+
+    const data = await res.json();
+
+    document.getElementById("contractResult").innerText =
+      JSON.stringify(data);
+
+    loadContract();
+  } catch (err) {
+    alert("Invalid JSON");
+  }
+}
+
+loadLogs();
+loadContract();
+</script>
+
+</body>
+</html>

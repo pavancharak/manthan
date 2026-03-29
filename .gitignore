@@ -1,5 +1,14 @@
+# Python
 __pycache__/
 *.pyc
-.env
 venv/
 manthan.db
+
+# Node
+node_modules/
+dist/
+build/
+
+# Env
+.env
+.env.local
